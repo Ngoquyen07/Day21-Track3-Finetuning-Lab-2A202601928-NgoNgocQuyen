@@ -32,7 +32,9 @@ def check(name: str, status: str, detail: str = "") -> None:
 
 
 def _sha(path: pathlib.Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()[:16]
+    # The reference hashes were made from LF files. Git may check the same JSONL out
+    # as CRLF on Windows, which must not look like evaluation-set drift.
+    return hashlib.sha256(path.read_bytes().replace(b"\r\n", b"\n")).hexdigest()[:16]
 
 
 def _load_json(path: pathlib.Path):
@@ -247,6 +249,9 @@ def full() -> None:
 
 
 def main() -> int:
+    # Windows' legacy console cannot print the Vietnamese/Greek labels used below.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     ap = argparse.ArgumentParser()
     ap.add_argument("--smoke", action="store_true", help="imports + data + tests only")
     args = ap.parse_args()

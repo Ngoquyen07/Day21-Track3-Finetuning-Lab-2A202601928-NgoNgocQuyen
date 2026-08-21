@@ -187,3 +187,14 @@ def test_prompts_have_exactly_one_definition():
     assert generate.OPTIMIZED_PROMPT is config.OPTIMIZED_PROMPT
     gen_src = (ROOT / "src" / "labkit" / "generate.py").read_text(encoding="utf-8")
     assert "NAIVE_PROMPT = " not in gen_src, "generate.py must import, not redefine"
+
+
+def test_verify_checksum_ignores_checkout_line_endings(tmp_path):
+    """A CRLF checkout is the same dataset as the LF reference corpus."""
+    spec = importlib.util.spec_from_file_location("verify", ROOT / "scripts" / "verify.py")
+    verify = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(verify)
+    lf, crlf = tmp_path / "lf.jsonl", tmp_path / "crlf.jsonl"
+    lf.write_bytes(b'{"ticket": "x"}\n')
+    crlf.write_bytes(b'{"ticket": "x"}\r\n')
+    assert verify._sha(lf) == verify._sha(crlf)
